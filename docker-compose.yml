@@ -1,0 +1,178 @@
+version: '3.5'
+services:
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    # user: uid:gid
+    # network_mode: 'host'
+    ports:
+      - 8096:8096
+      - 7359:7359/udp
+      - 1900:1900/udp
+    volumes:
+      - .\Jellyfin\config:/config
+      - .\Jellyfin\cache:/cache
+      - .\Resource\电影:/media/movie
+      - .\Resource\剧集:/media/tv
+    restart: 'unless-stopped'
+    environment:
+      - JELLYFIN_PublishedServerUrl=http://desktop.halfsugar.tech:8096
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [ gpu ]
+  qbittorrent:
+    image: linuxserver/qbittorrent
+    container_name: qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Shanghai
+      - WEBUI_PORT=1024
+    volumes:
+      - .\qbittorrent\config:/config
+      - .\Resource\downloads:/downloads
+    ports:
+      - 1024:1024
+      - 6881:6881
+      - 6881:6881/udp
+    restart: unless-stopped
+  radarr:
+    image: linuxserver/radarr
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Shanghai
+    volumes:
+      - .\radarr\data:/config
+      - .\Resource:/media #optional
+      # - /path/to/downloadclient-downloads:/downloads #optional
+    ports:
+      - 7878:7878
+    restart: unless-stopped
+  sonarr:
+    image: linuxserver/sonarr
+    container_name: sonarr
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai # Specify a timezone to use
+      - PUID=1000 # User ID to run as
+      - PGID=1000 # Group ID to run as
+    volumes:
+      - .\sonarr\data:/config
+      - .\Resource:/media #optional
+    ports:
+      - 8989:8989/tcp # Web UI
+  jackett:
+    image: linuxserver/jackett
+    container_name: jackett
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Shanghai
+      - AUTO_UPDATE=true #optional
+      - RUN_OPTS= #optional
+    volumes:
+      - .\jackett\data:/config
+      - .\jackett\downloads:/downloads
+    ports:
+      - 9117:9117
+    restart: unless-stopped
+  bazarr:
+    image: linuxserver/bazarr
+    container_name: bazarr
+    restart: unless-stopped
+    environment:
+      # - UMASK_SET # Control permissions of files and directories created by Bazarr
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Shanghai
+    volumes:
+      - .\Resource\剧集:/tv # Location of your TV Shows
+      - .\Resource\电影:/movies # Location of your movies
+      - .\bazarr\config:/config # Bazarr data
+    ports:
+      - 6767:6767/tcp # Allows HTTP access to the internal webserver.
+  jellyseerr:
+    image: fallenbagel/jellyseerr
+    container_name: jellyseerr
+    environment:
+      - LOG_LEVEL=debug
+      - TZ=Asia/Shanghai
+    ports:
+      - 5055:5055
+    volumes:
+      - .\jellyseerr\config:/app/config
+    restart: unless-stopped
+  flaresolverr:
+    image: flaresolverr/flaresolverr
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+      - TZ=Asia/Shanghai
+    ports:
+      - "${PORT:-8191}:8191"
+    restart: unless-stopped
+  prowlarr:
+    image: linuxserver/prowlarr
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Shanghai
+    volumes:
+      - .\prowlarr\data:/config
+    ports:
+      - 9696:9696
+    restart: unless-stopped
+  nginx:
+    image: nginx
+    container_name: nginx
+    volumes:
+      - .\nginx:/etc/nginx/conf.d
+      - .\letsencrypt\config\archive:/cert
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - NGINX_HOST=http://desktop.halfsugar.tech
+      - NGINX_PORT=80
+  heimdall:
+    image: linuxserver/heimdall
+    container_name: heimdall
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Shanghai
+    volumes:
+      - .\heimdall\config:/config
+    # ports:
+      # - 80:80
+      # - 443:443
+    restart: unless-stopped
+  transmission:
+    image: linuxserver/transmission
+    container_name: transmission
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Shanghai
+      - TRANSMISSION_WEB_HOME= #optional
+      - USER= #optional
+      - PASS= #optional
+      - WHITELIST= #optional
+      - PEERPORT= #optional
+      - HOST_WHITELIST= #optional
+    volumes:
+      - .\transmission\config:/config
+      - .\Resource\downloads:/downloads
+      - .\transmission\watch:/watch
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+    restart: unless-stopped

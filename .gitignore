@@ -1,0 +1,13 @@
+/Resource/*
+
+/bazarr
+/qbittorrent
+/heimdall
+/jackett
+/Jellyfin
+/jellyseerr
+/letsencrypt
+/prowlarr
+/radarr
+/sonarr
+/transmission
