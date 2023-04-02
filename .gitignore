@@ -6,7 +6,10 @@
 /jackett
 /Jellyfin
 /jellyseerr
-/letsencrypt
+
+/letsencrypt/config
+/letsencrypt/secrets
+
 /prowlarr
 /radarr
 /sonarr

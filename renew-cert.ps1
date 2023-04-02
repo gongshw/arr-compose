@@ -1,6 +1,5 @@
 docker run -it --rm --name certbot `
     -v "$(Get-Location)\letsencrypt\config:/etc/letsencrypt" `
-    -v "$(Get-Location)\letsencrypt\lib:/var/lib/letsencrypt" `
     -v "$(Get-Location)\letsencrypt\secrets:/secrets" `
     -v "$(Get-Location)\letsencrypt\bin:/letsencrypt/bin" `
     --entrypoint "sh" `
