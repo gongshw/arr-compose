@@ -12,8 +12,8 @@ services:
     volumes:
       - .\Jellyfin\config:/config
       - .\Jellyfin\cache:/cache
-      - .\Resource\电影:/media/movie
-      - .\Resource\剧集:/media/tv
+      - F:\Resource\电影:/media/movie
+      - F:\Resource\剧集:/media/tv
     restart: 'unless-stopped'
     environment:
       - JELLYFIN_PublishedServerUrl=http://desktop.halfsugar.tech:8096
@@ -32,7 +32,7 @@ services:
       - WEBUI_PORT=1024
     volumes:
       - .\qbittorrent\config:/config
-      - .\Resource\downloads:/downloads
+      - F:\Resource\downloads:/downloads
     ports:
       - 1024:1024
       - 6881:6881
@@ -47,7 +47,7 @@ services:
       - TZ=Asia/Shanghai
     volumes:
       - .\radarr\data:/config
-      - .\Resource:/media #optional
+      - F:\Resource:/media #optional
       # - /path/to/downloadclient-downloads:/downloads #optional
     ports:
       - 7878:7878
@@ -62,7 +62,7 @@ services:
       - PGID=1000 # Group ID to run as
     volumes:
       - .\sonarr\data:/config
-      - .\Resource:/media #optional
+      - F:\Resource:/media #optional
     ports:
       - 8989:8989/tcp # Web UI
   jackett:
@@ -90,8 +90,8 @@ services:
       - PGID=1000
       - TZ=Asia/Shanghai
     volumes:
-      - .\Resource\剧集:/tv # Location of your TV Shows
-      - .\Resource\电影:/movies # Location of your movies
+      - F:\Resource\剧集:/tv # Location of your TV Shows
+      - F:\Resource\电影:/movies # Location of your movies
       - .\bazarr\config:/config # Bazarr data
     ports:
       - 6767:6767/tcp # Allows HTTP access to the internal webserver.
@@ -133,12 +133,15 @@ services:
     image: nginx
     container_name: nginx
     volumes:
+      - .\letsencrypt\config:/etc/letsencrypt
       - .\nginx:/etc/nginx/conf.d
-      - .\letsencrypt\config\archive:/cert
     ports:
       - "80:80"
       - "443:443"
     environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Shanghai
       - NGINX_HOST=http://desktop.halfsugar.tech
       - NGINX_PORT=80
   heimdall:
@@ -169,10 +172,112 @@ services:
       - HOST_WHITELIST= #optional
     volumes:
       - .\transmission\config:/config
-      - .\Resource\downloads:/downloads
+      - F:\Resource\downloads:/downloads
       - .\transmission\watch:/watch
     ports:
       - 9091:9091
       - 51413:51413
       - 51413:51413/udp
     restart: unless-stopped
+  Aria2-Pro:
+    container_name: aria2-pro
+    image: p3terx/aria2-pro
+    environment:
+      - PUID=65534
+      - PGID=65534
+      - UMASK_SET=022
+      - RPC_SECRET=P3TERX
+      - RPC_PORT=6800
+      - LISTEN_PORT=6888
+      - DISK_CACHE=64M
+      - IPV6_MODE=false
+      - UPDATE_TRACKERS=true
+      - CUSTOM_TRACKER_URL=
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./aria2/aria2-config:/config
+      - F:\Resource\downloads:/downloads
+    ports:
+      - 6800:6800
+      - 6888:6888
+      - 6888:6888/udp
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 1m
+
+  AriaNg:
+    container_name: ariang
+    image: p3terx/ariang
+    command: --port 6880 --ipv6
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 1m
+  photoprism:
+    image: photoprism/photoprism
+    container_name: photoprism
+    restart: unless-stopped
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+    # ports:
+    #   - "2342:2342" # HTTP port (host:container)
+    environment:
+      PHOTOPRISM_ADMIN_USER: "gongshw"                 # superadmin username
+      PHOTOPRISM_ADMIN_PASSWORD: "1123581321"          # initial superadmin password (minimum 8 characters)
+      PHOTOPRISM_AUTH_MODE: "password"               # authentication mode (public, password)
+      PHOTOPRISM_SITE_URL: "https://photoprism.home.halfsugar.tech/"  # server URL in the format "http(s)://domain.name(:port)/(path)"
+      PHOTOPRISM_ORIGINALS_LIMIT: 5000               # file size limit for originals in MB (increase for high-res video)
+      PHOTOPRISM_HTTP_COMPRESSION: "gzip"            # improves transfer speed and bandwidth utilization (none or gzip)
+      PHOTOPRISM_DEBUG: "false"                      # run in debug mode, shows additional log messages
+      PHOTOPRISM_READONLY: "false"                   # do not modify originals folder; disables import, upload, and delete
+      PHOTOPRISM_EXPERIMENTAL: "false"               # enables experimental features
+      PHOTOPRISM_DISABLE_CHOWN: "false"              # disables updating storage permissions via chmod and chown on startup
+      PHOTOPRISM_DISABLE_WEBDAV: "false"             # disables built-in WebDAV server
+      PHOTOPRISM_DISABLE_SETTINGS: "false"           # disables settings UI and API
+      PHOTOPRISM_DISABLE_TENSORFLOW: "false"         # disables all features depending on TensorFlow
+      PHOTOPRISM_DISABLE_FACES: "false"              # disables face detection and recognition (requires TensorFlow)
+      PHOTOPRISM_DISABLE_CLASSIFICATION: "false"     # disables image classification (requires TensorFlow)
+      PHOTOPRISM_DISABLE_RAW: "false"                # disables indexing and conversion of RAW files
+      PHOTOPRISM_RAW_PRESETS: "false"                # enables applying user presets when converting RAW files (reduces performance)
+      PHOTOPRISM_JPEG_QUALITY: 85                    # a higher value increases the quality and file size of JPEG images and thumbnails (25-100)
+      PHOTOPRISM_DETECT_NSFW: "false"                # automatically flags photos as private that MAY be offensive (requires TensorFlow)
+      PHOTOPRISM_UPLOAD_NSFW: "true"                 # allows uploads that MAY be offensive (no effect without TensorFlow)
+      PHOTOPRISM_DATABASE_DRIVER: "mysql"            # use MariaDB 10.5+ or MySQL 8+ instead of SQLite for improved performance
+      PHOTOPRISM_DATABASE_SERVER: "mariadb:3306"     # MariaDB or MySQL database server hostname (:port is optional)
+      PHOTOPRISM_DATABASE_NAME: "photoprism"         # MariaDB or MySQL database schema name
+      PHOTOPRISM_DATABASE_USER: "photoprism"         # MariaDB or MySQL database user name
+      PHOTOPRISM_DATABASE_PASSWORD: "insecure"       # MariaDB or MySQL database user password
+      PHOTOPRISM_SITE_CAPTION: "AI-Powered Photos App"
+      PHOTOPRISM_SITE_DESCRIPTION: ""                # meta site description
+      PHOTOPRISM_SITE_AUTHOR: ""                     # meta site author
+    working_dir: "/photoprism" # do not change or remove
+    ## Storage Folders: use "/" not "\" as separator, "~" is a shortcut for C:/user/{username}, "." for the current directory
+    volumes:
+      - F:\Resource\Pictures:/photoprism/originals    # original media files (photos and videos)
+      - .\photoprism\storage:/photoprism/storage     # *writable* storage folder for cache, database, and sidecar files (never remove)
+  mariadb:
+    image: mariadb:10.9
+    container_name: mariadb
+    restart: unless-stopped
+    ports:
+      - 3306:3306 # Expose Port 3306 
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+    command: mysqld --innodb-buffer-pool-size=5G >
+      --transaction-isolation=READ-COMMITTED --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci --max-connections=512
+      --innodb-rollback-on-timeout=OFF --innodb-lock-wait-timeout=120
+    volumes:
+      - "./mariadb/./database:/var/lib/mysql" # DO NOT REMOVE
+    environment:
+      MARIADB_AUTO_UPGRADE: "1"
+      MARIADB_INITDB_SKIP_TZINFO: "1"
+      MARIADB_DATABASE: "photoprism"
+      MARIADB_USER: "photoprism"
+      MARIADB_PASSWORD: "insecure"
+      MARIADB_ROOT_PASSWORD: "insecure"

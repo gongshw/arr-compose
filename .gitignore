@@ -6,6 +6,10 @@
 /jackett
 /Jellyfin
 /jellyseerr
+/photoprism
+/mariadb
+/aria2
+/baidunetdisk
 
 /letsencrypt/config
 /letsencrypt/secrets
